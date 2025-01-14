@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صفحة الإدارة</title>
+    <script type="module">
+        // استيراد Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        // إعداد Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCi9QHOy4nVXX02qTnt2iFyvQZSc11gqyc",
+            authDomain: "talbat12s.firebaseapp.com",
+            projectId: "talbat12s",
+            storageBucket: "talbat12s.appspot.com",
+            messagingSenderId: "731586306852",
+            appId: "1:731586306852:web:850aeabd421f52a76e89b1",
+            measurementId: "G-RWFZVNP546"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // عناصر الصفحة
+        const orderList = document.getElementById("order-list");
+        const addOrderForm = document.getElementById("add-order-form");
+
+        // وظيفة لجلب الطلبات وعرضها
+        async function fetchOrders() {
+            orderList.innerHTML = ""; // تفريغ القائمة
+            const querySnapshot = await getDocs(collection(db, "orders"));
+            querySnapshot.forEach((doc) => {
+                const order = doc.data();
+                const orderId = doc.id;
+
+                const orderElement = document.createElement("div");
+                orderElement.className = "order-item";
+                orderElement.innerHTML = `
+                    <div><strong>رقم الطلب:</strong> ${order.orderId}</div>
+                    <div><strong>المستخدم:</strong> ${order.userId}</div>
+                    <div><strong>وزن الطلب:</strong> ${order.weight} كجم</div>
+                    <div><strong>السعر:</strong> ${order.price} ريال</div>
+                    <div><strong>الأيام المتبقية:</strong> ${order.remainingDays} يوم</div>
+                    <button onclick="deleteOrder('${orderId}')">حذف</button>
+                    <button onclick="editOrder('${orderId}', '${order.orderId}', '${order.userId}', '${order.weight}', '${order.price}')">تعديل</button>
+                `;
+                orderList.appendChild(orderElement);
+            });
+        }
+
+        // وظيفة لإضافة طلب
+        async function addOrder(event) {
+            event.preventDefault(); // منع إعادة تحميل الصفحة
+
+            const orderId = document.getElementById("order-id").value;
+            const userId = document.getElementById("user-id").value;
+            const weight = document.getElementById("order-weight").value;
+            const price = document.getElementById("order-price").value;
+
+            await addDoc(collection(db, "orders"), {
+                orderId,
+                userId,
+                weight: parseFloat(weight),
+                price: parseFloat(price),
+                remainingDays: 10 // بدء العد التنازلي من 10
+            });
+
+            alert("تم إضافة الطلب بنجاح!");
+            addOrderForm.reset();
+            fetchOrders(); // تحديث القائمة
+        }
+
+        // تعريف دالة الإضافة في النطاق العام
+        window.addOrder = addOrder;
+
+        // وظيفة لحذف طلب
+        async function deleteOrder(orderId) {
+            const confirmed = confirm("هل أنت متأكد من حذف هذا الطلب؟");
+            if (confirmed) {
+                await deleteDoc(doc(db, "orders", orderId));
+                alert("تم حذف الطلب بنجاح!");
+                fetchOrders(); // تحديث القائمة
+            }
+        }
+
+        // تعريف دالة الحذف في النطاق العام
+        window.deleteOrder = deleteOrder;
+
+        // وظيفة لتعديل طلب
+        async function editOrder(orderId, currentOrderId, currentUserId, currentWeight, currentPrice) {
+            const newOrderId = prompt("تعديل رقم الطلب:", currentOrderId);
+            const newUserId = prompt("تعديل معرف المستخدم:", currentUserId);
+            const newWeight = prompt("تعديل وزن الطلب (بالكجم):", currentWeight);
+            const newPrice = prompt("تعديل سعر الطلب (بالريال):", currentPrice);
+
+            if (newOrderId && newUserId && newWeight && newPrice) {
+                await updateDoc(doc(db, "orders", orderId), {
+                    orderId: newOrderId,
+                    userId: newUserId,
+                    weight: parseFloat(newWeight),
+                    price: parseFloat(newPrice)
+                });
+                alert("تم تعديل الطلب بنجاح!");
+                fetchOrders(); // تحديث القائمة
+            }
+        }
+
+        // تعريف دالة التعديل في النطاق العام
+        window.editOrder = editOrder;
+
+        // تشغيل جلب الطلبات عند تحميل الصفحة
+        fetchOrders();
+
+        // ربط إضافة الطلب بالنموذج
+        addOrderForm.addEventListener("submit", addOrder);
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f9f9f9;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #007bff;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        form input {
+            width: calc(25% - 10px);
+            padding: 10px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        form button {
+            padding: 10px 15px;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        form button:hover {
+            background: #0056b3;
+        }
+
+        .order-item {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f8f9fa;
+        }
+
+        .order-item button {
+            padding: 5px 10px;
+            background: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        .order-item button:last-child {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .order-item button:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>صفحة الإدارة</h1>
+        <form id="add-order-form">
+            <input type="text" id="order-id" placeholder="رقم الطلب" required>
+            <input type="text" id="user-id" placeholder="معرف المستخدم" required>
+            <input type="number" id="order-weight" placeholder="وزن الطلب (كجم)" required>
+            <input type="number" id="order-price" placeholder="سعر الطلب (ريال)" required>
+            <button type="submit">إضافة طلب</button>
+        </form>
+        <div id="order-list"></div>
+    </div>
+</body>
+</html>
