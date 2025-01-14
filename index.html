@@ -93,7 +93,7 @@
             const newOrderId = prompt("تعديل رقم الطلب:", currentOrderId);
             const newUserId = prompt("تعديل معرف المستخدم:", currentUserId);
             const newWeight = prompt("تعديل وزن الطلب (بالكجم):", currentWeight);
-            const newPrice = prompt("تعديل سعر الطلب (بالريال):", currentPrice);
+            const newPrice = prompt("تعديل سعر الطلب (بالدينار العراقي):", currentPrice);
 
             if (newOrderId && newUserId && newWeight && newPrice) {
                 await updateDoc(doc(db, "orders", orderId), {
@@ -202,7 +202,7 @@
             <input type="text" id="order-id" placeholder="رقم الطلب" required>
             <input type="text" id="user-id" placeholder="معرف المستخدم" required>
             <input type="number" id="order-weight" placeholder="وزن الطلب (كجم)" required>
-            <input type="number" id="order-price" placeholder="سعر الطلب (ريال)" required>
+            <input type="number" id="order-price" placeholder="سعر الطلب (دينار العراقي)" required>
             <button type="submit">إضافة طلب</button>
         </form>
         <div id="order-list"></div>
