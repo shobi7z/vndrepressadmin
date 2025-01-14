@@ -35,6 +35,15 @@
                 const order = doc.data();
                 const orderId = doc.id;
 
+                // التأكد من وجود "creationTime" قبل التعامل معها
+                const creationTime = order.creationTime ? order.creationTime.seconds * 1000 : Date.now();
+                const remainingDays = order.remainingDays || 10; // التأكد من وجود remainingDays (10 أيام كقيمة افتراضية)
+                
+                // حساب الوقت المتبقي
+                const expirationTime = creationTime + (remainingDays * 24 * 60 * 60 * 1000); 
+                const remainingTimeInSeconds = (expirationTime - Date.now()) / 1000;
+                const timeLeft = calculateTimeLeft(remainingTimeInSeconds);
+
                 const orderElement = document.createElement("div");
                 orderElement.className = "order-item";
                 orderElement.innerHTML = `
@@ -42,12 +51,31 @@
                     <div><strong>المستخدم:</strong> ${order.userId}</div>
                     <div><strong>وزن الطلب:</strong> ${order.weight} كجم</div>
                     <div><strong>السعر:</strong> ${order.price} ريال</div>
-                    <div><strong>الأيام المتبقية:</strong> ${order.remainingDays} يوم</div>
+                    <div><strong>الوقت المتبقي:</strong> <span class="order-item-time">${timeLeft}</span></div>
                     <button onclick="deleteOrder('${orderId}')">حذف</button>
                     <button onclick="editOrder('${orderId}', '${order.orderId}', '${order.userId}', '${order.weight}', '${order.price}')">تعديل</button>
                 `;
                 orderList.appendChild(orderElement);
+
+                // التحديث التلقائي للوقت المتبقي (كل ثانية)
+                setInterval(() => {
+                    const updatedRemainingTime = (expirationTime - Date.now()) / 1000;
+                    const updatedTimeLeft = calculateTimeLeft(updatedRemainingTime);
+                    orderElement.querySelector('.order-item-time').innerText = `الوقت المتبقي: ${updatedTimeLeft}`;
+                }, 1000);
             });
+        }
+
+        function calculateTimeLeft(seconds) {
+            if (seconds <= 0) {
+                return "انتهى الوقت";
+            }
+            const days = Math.floor(seconds / (24 * 60 * 60));
+            const hours = Math.floor((seconds % (24 * 60 * 60)) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            return `${days} يوم, ${hours} ساعة, ${minutes} دقيقة, ${secs} ثانية`;
         }
 
         // وظيفة لإضافة طلب
@@ -59,12 +87,16 @@
             const weight = document.getElementById("order-weight").value;
             const price = document.getElementById("order-price").value;
 
+            // تخزين وقت الإضافة وإضافة الوقت المتبقي بـ 10 أيام
+            const creationTime = new Date();
+            const remainingDays = 10; // العدد الابتدائي 10 أيام
             await addDoc(collection(db, "orders"), {
                 orderId,
                 userId,
                 weight: parseFloat(weight),
                 price: parseFloat(price),
-                remainingDays: 10 // بدء العد التنازلي من 10
+                remainingDays, // وقت العد التنازلي
+                creationTime: creationTime // وقت انشاء الطلب
             });
 
             alert("تم إضافة الطلب بنجاح!");
@@ -193,6 +225,10 @@
         .order-item button:hover {
             opacity: 0.8;
         }
+
+        .order-item-time {
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -201,7 +237,7 @@
         <form id="add-order-form">
             <input type="text" id="order-id" placeholder="رقم الطلب" required>
             <input type="text" id="user-id" placeholder="معرف المستخدم" required>
-            <input type="number" id="order-weight" placeholder="وزن الطلب (كجم)" required>
+            <input type="number" id="order-weight" placeholder="وزن الطلب (كجم)" step="0.01" required>
             <input type="number" id="order-price" placeholder="سعر الطلب (دينار العراقي)" required>
             <button type="submit">إضافة طلب</button>
         </form>
